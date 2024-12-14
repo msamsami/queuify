@@ -1,5 +1,6 @@
 import random
 import string
+import tempfile
 
 import pytest
 from dotenv import load_dotenv
@@ -21,3 +22,9 @@ def get_random_message():
         return "".join(random.choices(string.ascii_letters + string.digits, k=10))
 
     return _generate_random_str
+
+
+@pytest.fixture
+def temp_dir():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield temp_dir
