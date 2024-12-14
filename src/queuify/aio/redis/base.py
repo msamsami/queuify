@@ -31,9 +31,10 @@ class BaseAsyncRedisQueue(_BaseRedisQueue, AsyncQueue[T]):
     async def _ensure_initialized(self) -> None:
         if not self._initialized or not self._scripts:
             async with self._init_lock:
-                if not self._initialized or not self._scripts:
+                if not self._scripts:
                     for operation in RedisOperation:
                         self._scripts[operation] = self.client.register_script(await get_lua_script(operation))
+                if not self._initialized:
                     await initialize_queue(
                         self.client,
                         self._key,

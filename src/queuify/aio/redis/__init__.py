@@ -55,11 +55,9 @@ class RedisQueue(BaseAsyncRedisQueue[T]):
                 async for message in pubsub.listen():
                     if message["type"] != "message":
                         continue
-                    channel = self._to_str(message["channel"])
-                    if channel != self._join_channel_key:
+                    if self._to_str(message["channel"]) != self._join_channel_key:
                         continue
-                    data = self._to_str(message["data"])
-                    if data in (NO_REMAINING_TASK_MSG, QUEUE_DELETION_MSG):
+                    if self._to_str(message["data"]) in (NO_REMAINING_TASK_MSG, QUEUE_DELETION_MSG):
                         break
             finally:
                 await pubsub.unsubscribe(self._join_channel_key)
@@ -82,11 +80,11 @@ class RedisQueue(BaseAsyncRedisQueue[T]):
         if timeout and timeout < 0:
             raise ValueError(TIMEOUT_NEGATIVE_ERROR_MSG)
         token = None
+        if self._maxsize > 0:
+            token = await self.client.blpop([self._semaphore_key], timeout=timeout)
+            if token is None:
+                raise QueueFull
         try:
-            if self._maxsize > 0:
-                token = await self.client.blpop([self._semaphore_key], timeout=timeout)
-                if token is None:
-                    raise QueueFull
             await self._scripts[RedisOperation.put](
                 keys=[self._key, self._unfinished_tasks_key],
                 args=[item],

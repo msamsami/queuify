@@ -109,9 +109,10 @@ class BaseRedisQueue(_BaseRedisQueue, Queue[T]):
     def _ensure_initialized(self) -> None:
         if not self._initialized or not self._scripts:
             with self._init_lock:
-                if not self._initialized or not self._scripts:
+                if not self._scripts:
                     for operation in RedisOperation:
                         self._scripts[operation] = self.client.register_script(get_lua_script(operation))
+                if not self._initialized:
                     initialize_queue(
                         self.client,
                         self._key,
