@@ -7,10 +7,10 @@ from typing import Any, AsyncGenerator, TypeVar
 import aiosqlite
 
 from queuify.aio.base import AsyncQueue
+from queuify.disk._enums import SqlOperation
 from queuify.disk.base import FilePath, _BaseDiskQueue
-from queuify.disk.enums import SqlOperation
 
-from .utils import get_sql_query, initialize_queue
+from ._utils import get_sql_query, initialize_queue
 
 T = TypeVar("T")
 

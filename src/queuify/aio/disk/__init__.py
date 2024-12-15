@@ -5,8 +5,8 @@ from typing import Optional, TypeVar, cast
 from watchfiles import awatch
 
 from queuify.const import TASK_DONE_TOO_MANY_TIMES_ERROR_MSG, TIMEOUT_NEGATIVE_ERROR_MSG
+from queuify.disk._enums import SqlOperation
 from queuify.disk.const import WATCHFILES_KWARGS
-from queuify.disk.enums import SqlOperation
 from queuify.disk.exceptions import QueueFileBroken
 from queuify.exceptions import QueueEmpty, QueueFull
 
@@ -98,38 +98,33 @@ class DiskQueue(BaseAsyncDiskQueue[T]):
         except QueueFull:
             pass
         timeout_event, timeout_task = self._get_timeout_event_and_task(timeout)
+        await asyncio.sleep(0)
         async for _ in awatch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
             try:
                 return await self.put_nowait(item)
             except QueueFull:
                 pass
-            finally:
-                if timeout_task:
-                    await timeout_task
         else:
+            if timeout_task and timeout_event and timeout_event.is_set():
+                await timeout_task
             raise QueueFull
 
     async def get(self, timeout: Optional[float] = None) -> T:
-        item: Optional[T] = None
-        while item is None:
+        try:
+            return await self.get_nowait()
+        except QueueEmpty:
+            pass
+        timeout_event, timeout_task = self._get_timeout_event_and_task(timeout)
+        await asyncio.sleep(0)
+        async for _ in awatch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
             try:
-                item = await self.get_nowait()
-                break
+                return await self.get_nowait()
             except QueueEmpty:
                 pass
-            timeout_event, timeout_task = self._get_timeout_event_and_task(timeout)
-            async for _ in awatch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
-                try:
-                    item = await self.get_nowait()
-                    break
-                except QueueEmpty:
-                    pass
-                finally:
-                    if timeout_task:
-                        await timeout_task
-            else:
-                raise QueueEmpty
-        return item
+        else:
+            if timeout_task and timeout_event and timeout_event.is_set():
+                await timeout_task
+            raise QueueEmpty
 
     async def put_nowait(self, item: T) -> None:
         if await self.full():

@@ -9,8 +9,8 @@ from typing import Any, Awaitable, Generator, TypeVar, Union
 
 from queuify.base import Queue
 
-from .enums import SqlOperation
-from .utils import get_sql_query, initialize_queue
+from ._enums import SqlOperation
+from ._utils import get_sql_query, initialize_queue
 
 T = TypeVar("T")
 FilePath = Union[str, Path]

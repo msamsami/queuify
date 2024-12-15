@@ -8,9 +8,9 @@ from watchfiles import watch
 from queuify.const import TASK_DONE_TOO_MANY_TIMES_ERROR_MSG, TIMEOUT_NEGATIVE_ERROR_MSG
 from queuify.exceptions import QueueEmpty, QueueFull
 
+from ._enums import SqlOperation
 from .base import BaseDiskQueue
 from .const import WATCHFILES_KWARGS
-from .enums import SqlOperation
 from .exceptions import QueueFileBroken
 
 T = TypeVar("T")
@@ -87,7 +87,7 @@ class DiskQueue(BaseDiskQueue[T]):
             time.sleep(timeout)
             stop_event.set()
 
-        stop_on_timeout_thread = threading.Thread(target=stop_on_timeout)
+        stop_on_timeout_thread = threading.Thread(target=stop_on_timeout, daemon=True)
         return stop_event, stop_on_timeout_thread
 
     def put(self, item: T, timeout: Optional[float] = None) -> None:
@@ -96,38 +96,35 @@ class DiskQueue(BaseDiskQueue[T]):
         except QueueFull:
             pass
         timeout_event, timeout_thread = self._get_timeout_event_and_thread(timeout)
+        if timeout_thread:
+            timeout_thread.start()
         for _ in watch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
             try:
                 return self.put_nowait(item)
             except QueueFull:
                 pass
-            finally:
-                if timeout_thread:
-                    timeout_thread.join()
         else:
+            if timeout_thread and timeout_event and timeout_event.is_set():
+                timeout_thread.join()
             raise QueueFull
 
     def get(self, timeout: Optional[float] = None) -> T:
-        item: Optional[T] = None
-        while item is None:
+        try:
+            return self.get_nowait()
+        except QueueEmpty:
+            pass
+        timeout_event, timeout_thread = self._get_timeout_event_and_thread(timeout)
+        if timeout_thread:
+            timeout_thread.start()
+        for _ in watch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
             try:
-                item = self.get_nowait()
-                break
+                return self.get_nowait()
             except QueueEmpty:
                 pass
-            timeout_event, timeout_thread = self._get_timeout_event_and_thread(timeout)
-            for _ in watch(self.file_path, stop_event=timeout_event, **WATCHFILES_KWARGS):
-                try:
-                    item = self.get_nowait()
-                    break
-                except QueueEmpty:
-                    pass
-                finally:
-                    if timeout_thread:
-                        timeout_thread.join()
-            else:
-                raise QueueEmpty
-        return item
+        else:
+            if timeout_thread and timeout_event and timeout_event.is_set():
+                timeout_thread.join()
+            raise QueueEmpty
 
     def put_nowait(self, item: T) -> None:
         if self.full():
