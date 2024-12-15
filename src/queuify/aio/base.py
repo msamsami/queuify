@@ -17,15 +17,15 @@ class AsyncQueue(Generic[T], metaclass=ABCMeta):
     async def task_done(self) -> None:
         """Indicate that a formerly enqueued task is complete.
 
-        Used by queue consumers. For each get() used to fetch a task,
-        a subsequent call to task_done() tells the queue that the processing
+        Used by queue consumers. For each `get()` used to fetch a task,
+        a subsequent call to `task_done()` tells the queue that the processing
         on the task is complete.
 
-        If a join() is currently blocking, it will resume when all items have
-        been processed (meaning that a task_done() call was received for every
-        item that had been put() into the queue).
+        If a `join()` is currently blocking, it will resume when all items have
+        been processed (meaning that a `task_done()` call was received for every
+        item that had been `put()` into the queue).
 
-        Raises ValueError if called more times than there were items placed in
+        Raises `ValueError` if called more times than there were items placed in
         the queue.
         """
         pass
@@ -35,10 +35,10 @@ class AsyncQueue(Generic[T], metaclass=ABCMeta):
         """Block until all items in the queue have been gotten and processed.
 
         The count of unfinished tasks goes up whenever an item is added to the
-        queue. The count goes down whenever a consumer calls task_done() to
+        queue. The count goes down whenever a consumer calls `task_done()` to
         indicate that the item was retrieved and all work on it is complete.
 
-        When the count of unfinished tasks drops to zero, join() unblocks.
+        When the count of unfinished tasks drops to zero, `join()` unblocks.
         """
         pass
 
@@ -58,10 +58,10 @@ class AsyncQueue(Generic[T], metaclass=ABCMeta):
 
     @abstractmethod
     async def full(self) -> bool:
-        """Return True if there are maxsize items in the queue.
+        """Return True if there are `maxsize` items in the queue.
 
-        Note: If the Queue was initialized with maxsize=0 (the default),
-        then full() is never True.
+        Note: If the Queue was initialized with `maxsize=0` (the default),
+        then `full()` is never True.
         """
         pass
 
