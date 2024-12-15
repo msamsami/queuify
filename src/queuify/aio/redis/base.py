@@ -9,10 +9,10 @@ from redis.typing import FieldT
 
 from queuify.aio.base import AsyncQueue
 from queuify.const import QUEUE_DELETION_MSG
+from queuify.redis._enums import RedisOperation
 from queuify.redis.base import _BaseRedisQueue
-from queuify.redis.enums import RedisOperation
 
-from .utils import get_lua_script, initialize_queue
+from ._utils import get_lua_script, initialize_queue
 
 T = TypeVar("T", bound=FieldT)
 
@@ -38,9 +38,9 @@ class BaseAsyncRedisQueue(_BaseRedisQueue, AsyncQueue[T]):
                     await initialize_queue(
                         self.client,
                         self._key,
+                        self._unfinished_tasks_key,
                         self._semaphore_key,
                         self._semaphore_lock_key,
-                        self._unfinished_tasks_key,
                         self._maxsize,
                     )
                     self._initialized = True

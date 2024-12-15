@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "queuify"
 dynamic = ["version"]
@@ -12,41 +16,41 @@ requires-python = ">=3.9,<3.13"
 dependencies = [
     "aiofiles>=24.1.0",
     "aiosqlite>=0.20.0,<1.0.0",
-    "watchfiles>=0.24.0,<1.0.0",
+    "watchfiles>=0.24.0",
 ]
 
-[tool.setuptools]
-packages = { find = { where = ["src"], include = ["queuify"] } }
+[project.urls]
+Homepage = "https://github.com/msamsami/queuify"
+Source = "https://github.com/msamsami/queuify"
 
-[tool.setuptools.dynamic]
-version = { attr = "queuify.__version__" }
+[tool.hatch.version]
+path = "src/queuify/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/README.md", "/tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/queuify"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [project.optional-dependencies]
 redis = [
     "redis>=4.3.0",
 ]
-azure-storage = [
-    "azure-storage-queue>=12.2.0",
-]
-sqs = [
-    "boto3>=1.33.0,<2.0.0",
-    "aiobotocore>=2.8.0,<3.0.0",
-]
 
 [dependency-groups]
 dev = [
-    "bumpversion>=0.6.0",
-    "coverage>=7.6.4",
-    "isort>=5.13.2",
-    "mypy>=1.13.0",
-    "pre-commit>=4.0.1",
-    "pytest-asyncio>=0.24.0",
-    "pytest>=8.3.3",
-    "python-dotenv>=1.0.1",
-    "ruff>=0.7.2",
-    "types-aiobotocore[sqs]>=2.15.2.post3",
+    "bumpversion",
+    "isort",
+    "mypy",
+    "pre-commit",
+    "pytest-asyncio",
+    "pytest",
+    "python-dotenv",
+    "ruff",
     "types-aiofiles>=24.1.0.20240626",
-    "types-boto3[sqs]>=1.35.76",
     "types-redis>=4.6.0.20241004",
 ]
 
@@ -63,8 +67,6 @@ strict = true
 [[tool.mypy.overrides]]
 module = [
     "aiofiles",
-    "botocore.*",
-    "aiobotocore.*",
 ]
 ignore_missing_imports = true
 

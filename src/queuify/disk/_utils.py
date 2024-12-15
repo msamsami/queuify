@@ -4,8 +4,8 @@ import pathlib
 import sqlite3
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from ._enums import SqlOperation
 from .const import QUEUE_TABLE_COLUMNS, UNFINISHED_TASKS_TABLE_COLUMNS
-from .enums import SqlOperation
 from .exceptions import QueueFileBroken
 
 if TYPE_CHECKING:
@@ -31,7 +31,10 @@ def get_sql_query(operation: SqlOperation, table_name: Optional[str] = None) -> 
 
 
 def initialize_queue(
-    file_path: "FilePath", queue_table_name: str, unfinished_tasks_table_name: str, connection_kwargs: dict[str, Any]
+    file_path: "FilePath",
+    queue_table_name: str,
+    unfinished_tasks_table_name: str,
+    connection_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """Initialize the queue tables in the specified SQLite database file.
 
@@ -39,12 +42,12 @@ def initialize_queue(
         file_path (FilePath): Path to the queue file.
         queue_table_name (str): Name of the SQLite table name for the queue.
         unfinished_tasks_table_name (str): Name of the SQLite table name for the number of unfinished tasks in this queue.
-        connection_kwargs (dict[str, Any]): Additional keyword arguments for the `sqlite3` connection.
+        connection_kwargs (Optional[dict[str, Any]]): Additional keyword arguments for the `sqlite3` connection. Defaults to None.
 
     Raises:
         QueueFileBroken: If an existing table's schema does not match the expected structure, indicating possible file corruption.
     """
-    with sqlite3.connect(file_path, **connection_kwargs) as connection:
+    with sqlite3.connect(file_path, **(connection_kwargs or {})) as connection:
         try:
             connection.execute("BEGIN")
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import codecs
 from os import path
 

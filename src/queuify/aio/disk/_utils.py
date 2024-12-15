@@ -6,9 +6,9 @@ from typing import Any, Optional, cast
 import aiofiles
 import aiosqlite
 
+from queuify.disk._enums import SqlOperation
 from queuify.disk.base import FilePath
 from queuify.disk.const import QUEUE_TABLE_COLUMNS, UNFINISHED_TASKS_TABLE_COLUMNS
-from queuify.disk.enums import SqlOperation
 from queuify.disk.exceptions import QueueFileBroken
 
 
@@ -31,7 +31,10 @@ async def get_sql_query(operation: SqlOperation, table_name: Optional[str] = Non
 
 
 async def initialize_queue(
-    file_path: FilePath, queue_table_name: str, unfinished_tasks_table_name: str, connection_kwargs: dict[str, Any]
+    file_path: FilePath,
+    queue_table_name: str,
+    unfinished_tasks_table_name: str,
+    connection_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """Initialize the queue tables in the specified SQLite database file (asynchronous).
 
@@ -39,12 +42,12 @@ async def initialize_queue(
         file_path (FilePath): Path to the queue file.
         queue_table_name (str): Name of the SQLite table name for the queue.
         unfinished_tasks_table_name (str): Name of the SQLite table name for the number of unfinished tasks in this queue.
-        connection_kwargs (dict[str, Any]): Additional keyword arguments for the `aiosqlite` connection.
+        connection_kwargs (Optional[dict[str, Any]]): Additional keyword arguments for the `aiosqlite` connection. Defaults to None.
 
     Raises:
         QueueFileBroken: If an existing table's schema does not match the expected structure, indicating possible file corruption.
     """
-    async with aiosqlite.connect(file_path, **connection_kwargs) as connection:
+    async with aiosqlite.connect(file_path, **(connection_kwargs or {})) as connection:
         try:
             for table_name, expected_columns, create_operation in zip(
                 [queue_table_name, unfinished_tasks_table_name],

@@ -8,7 +8,7 @@ import aiofiles
 from redis.asyncio import Redis
 
 from queuify.const import SEMAPHORE_TOKEN
-from queuify.redis.enums import RedisOperation
+from queuify.redis._enums import RedisOperation
 
 
 async def get_lua_script(operation: RedisOperation) -> str:
@@ -28,22 +28,22 @@ async def get_lua_script(operation: RedisOperation) -> str:
 async def initialize_queue(
     client: Redis[Any],
     key: str,
+    unfinished_tasks_key: str,
     semaphore_key: str,
     semaphore_lock_key: str,
-    unfinished_tasks_key: str,
     maxsize: int,
 ) -> None:
     """Initialize a queue and an optional semaphore queue in the Redis database (asynchronous).
 
-    If a `maxsize` greater than 0 is provided, a semaphore queue is also initialized with pre-filled tokens. It will be created if it does not exist.
+    If a `maxsize>0` is provided, a semaphore queue is also initialized with pre-filled tokens. It will be created if it does not exist.
 
     Args:
         client (Redis[Any]): The redis client (asynchronous).
         key (str): The name of the Redis key for the queue.
+        unfinished_tasks_key (str): The name of the Redis key for the number of unfinished tasks in the queue.
         semaphore_key (str): The name of the Redis semaphore key for the queue.
         semaphore_lock_key (str): The name of the Redis semaphore lock key.
-        unfinished_tasks_key (str): The name of the Redis key for the number of unfinished tasks in the queue.
-        maxsize (int): The maximum number of tokens (messages) to initialize in the semaphore queue. If maxsize<=0, no semaphore is created.
+        maxsize (int): The maximum number of tokens to initialize in the semaphore queue. If `maxsize<=0`, no semaphore is created.
     """
     if maxsize > 0:
         unique_lock_value = str(uuid.uuid4())

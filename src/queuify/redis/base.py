@@ -11,8 +11,8 @@ from redis.typing import FieldT
 from queuify.base import Queue
 from queuify.const import QUEUE_DELETION_MSG
 
-from .enums import RedisOperation
-from .utils import get_lua_script, initialize_queue
+from ._enums import RedisOperation
+from ._utils import get_lua_script, initialize_queue
 
 T = TypeVar("T", bound=FieldT)
 
@@ -116,9 +116,9 @@ class BaseRedisQueue(_BaseRedisQueue, Queue[T]):
                     initialize_queue(
                         self.client,
                         self._key,
+                        self._unfinished_tasks_key,
                         self._semaphore_key,
                         self._semaphore_lock_key,
-                        self._unfinished_tasks_key,
                         self._maxsize,
                     )
                     self._initialized = True

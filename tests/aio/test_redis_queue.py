@@ -1,5 +1,6 @@
 import asyncio
 import re
+import time
 from typing import Callable
 
 import async_timeout
@@ -36,7 +37,7 @@ async def redis_queue_no_maxsize(redis_client: Redis):
 
 
 @pytest.mark.asyncio
-async def test_put_and_get(redis_queue: RedisQueue, random_message: str):
+async def test_put_and_get(redis_queue: RedisQueue[str], random_message: str):
     await redis_queue.put(random_message)
     assert await redis_queue.qsize() == 1
     message = await redis_queue.get()
@@ -47,7 +48,7 @@ async def test_put_and_get(redis_queue: RedisQueue, random_message: str):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("count", range(1, MAXSIZE + 1))
-async def test_multiple_put_and_get(redis_queue: RedisQueue, get_random_message: Callable[[], str], count: int):
+async def test_multiple_put_and_get(redis_queue: RedisQueue[str], get_random_message: Callable[[], str], count: int):
     messages = [get_random_message() for _ in range(count)]
     for message in messages:
         await redis_queue.put(message)
@@ -60,7 +61,7 @@ async def test_multiple_put_and_get(redis_queue: RedisQueue, get_random_message:
 
 
 @pytest.mark.asyncio
-async def test_put_and_get_with_delays(redis_queue: RedisQueue):
+async def test_put_and_get_with_delays(redis_queue: RedisQueue[str]):
     for i in range(MAXSIZE):
         await redis_queue.put(f"message{i}")
         await asyncio.sleep(0.1)
@@ -74,7 +75,7 @@ async def test_put_and_get_with_delays(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_put_nowait_and_get_nowait(redis_queue: RedisQueue, random_message: str):
+async def test_put_nowait_and_get_nowait(redis_queue: RedisQueue[str], random_message: str):
     await redis_queue.put_nowait(random_message)
     assert await redis_queue.qsize() == 1
     message = await redis_queue.get_nowait()
@@ -85,7 +86,9 @@ async def test_put_nowait_and_get_nowait(redis_queue: RedisQueue, random_message
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("count", range(1, MAXSIZE + 1))
-async def test_multiple_put_nowait_and_get_nowait(redis_queue: RedisQueue, get_random_message: Callable[[], str], count: int):
+async def test_multiple_put_nowait_and_get_nowait(
+    redis_queue: RedisQueue[str], get_random_message: Callable[[], str], count: int
+):
     messages = [get_random_message() for _ in range(count)]
     for message in messages:
         await redis_queue.put_nowait(message)
@@ -99,7 +102,7 @@ async def test_multiple_put_nowait_and_get_nowait(redis_queue: RedisQueue, get_r
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("count", range(1, MAXSIZE + 1))
-async def test_qsize(redis_queue: RedisQueue, count: int):
+async def test_qsize(redis_queue: RedisQueue[str], count: int):
     assert await redis_queue.qsize() == 0
     for i in range(count):
         await redis_queue.put("message")
@@ -111,7 +114,7 @@ async def test_qsize(redis_queue: RedisQueue, count: int):
 
 
 @pytest.mark.asyncio
-async def test_empty(redis_queue: RedisQueue):
+async def test_empty(redis_queue: RedisQueue[str]):
     assert await redis_queue.empty() is True
     await redis_queue.put("message")
     assert await redis_queue.empty() is False
@@ -122,13 +125,13 @@ async def test_empty(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_get_nowait_empty_queue(redis_queue: RedisQueue):
+async def test_get_nowait_empty_queue(redis_queue: RedisQueue[str]):
     with pytest.raises(QueueEmpty):
         await redis_queue.get_nowait()
 
 
 @pytest.mark.asyncio
-async def test_full(redis_queue: RedisQueue):
+async def test_full(redis_queue: RedisQueue[str]):
     for i in range(MAXSIZE):
         await redis_queue.put(f"message{i}")
     assert await redis_queue.full() is True
@@ -142,7 +145,7 @@ async def test_full(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_has_unfinished_tasks(redis_queue: RedisQueue):
+async def test_has_unfinished_tasks(redis_queue: RedisQueue[str]):
     assert await redis_queue._has_unfinished_tasks() is False
     await redis_queue.put("message")
     assert await redis_queue._has_unfinished_tasks() is True
@@ -153,13 +156,13 @@ async def test_has_unfinished_tasks(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_task_done_without_get(redis_queue: RedisQueue):
+async def test_task_done_without_get(redis_queue: RedisQueue[str]):
     with pytest.raises(ValueError):
         await redis_queue.task_done()
 
 
 @pytest.mark.asyncio
-async def test_task_done_too_many_times(redis_queue: RedisQueue):
+async def test_task_done_too_many_times(redis_queue: RedisQueue[str]):
     await redis_queue.put("message")
     await redis_queue.get()
     await redis_queue.task_done()
@@ -168,7 +171,7 @@ async def test_task_done_too_many_times(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_join(redis_queue: RedisQueue):
+async def test_join(redis_queue: RedisQueue[str]):
     await redis_queue.put("message")
     await redis_queue.get()
     await redis_queue.task_done()
@@ -177,7 +180,7 @@ async def test_join(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_delete(redis_queue: RedisQueue):
+async def test_delete(redis_queue: RedisQueue[str]):
     await redis_queue.put("message")
     await redis_queue.delete()
     assert await redis_queue.qsize() == 0
@@ -185,13 +188,13 @@ async def test_delete(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_join_empty_queue(redis_queue: RedisQueue):
+async def test_join_empty_queue(redis_queue: RedisQueue[str]):
     await redis_queue.join()
     assert await redis_queue.qsize() == 0
 
 
 @pytest.mark.asyncio
-async def test_join_with_multiple_tasks(redis_queue: RedisQueue):
+async def test_join_with_multiple_tasks(redis_queue: RedisQueue[str]):
     for i in range(5):
         await redis_queue.put(f"message{i}")
     for i in range(5):
@@ -202,34 +205,64 @@ async def test_join_with_multiple_tasks(redis_queue: RedisQueue):
 
 
 @pytest.mark.asyncio
-async def test_join_non_empty_queue(redis_queue: RedisQueue):
+async def test_join_non_empty_queue(redis_queue: RedisQueue[str]):
     await redis_queue.put("message")
     assert await redis_queue.qsize() == 1
     assert await redis_queue._has_unfinished_tasks() is True
     with pytest.raises(asyncio.TimeoutError):
         async with async_timeout.timeout(3):
             await redis_queue.join()
+    assert await redis_queue._has_unfinished_tasks() is True
 
 
 @pytest.mark.asyncio
-async def test_put_to_full_queue(redis_queue: RedisQueue, random_message: str):
-    for i in range(redis_queue.maxsize):
+async def test_put_to_full_queue(redis_queue: RedisQueue[str], random_message: str):
+    for _ in range(redis_queue.maxsize):
         await redis_queue.put(random_message)
+    assert await redis_queue.full() is True
     with pytest.raises(asyncio.TimeoutError):
         async with async_timeout.timeout(3):
             await redis_queue.put("message_overflow")
+    assert await redis_queue.full() is True
 
 
 @pytest.mark.asyncio
-async def test_get_from_empty_queue(redis_queue: RedisQueue):
+async def test_get_from_empty_queue(redis_queue: RedisQueue[str]):
+    assert await redis_queue.empty() is True
     with pytest.raises(asyncio.TimeoutError):
         async with async_timeout.timeout(3):
             await redis_queue.get()
+    assert await redis_queue.empty() is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("timeout", [0.5, 1, 2, 5])
+async def test_put_with_timeout(redis_queue: RedisQueue[str], random_message: str, timeout: float):
+    for _ in range(redis_queue.maxsize):
+        await redis_queue.put(random_message)
+    start_time = time.monotonic()
+    with pytest.raises(QueueFull):
+        async with async_timeout.timeout(timeout + 0.2):
+            await redis_queue.put("message_overflow", timeout=timeout)
+    end_time = time.monotonic()
+    assert end_time - start_time == pytest.approx(timeout, abs=0.15)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("timeout", [0.5, 1, 2, 5])
+async def test_get_with_timeout(redis_queue: RedisQueue[str], timeout: float):
+    assert await redis_queue.empty() is True
+    start_time = time.monotonic()
+    with pytest.raises(QueueEmpty):
+        async with async_timeout.timeout(timeout + 0.2):
+            await redis_queue.get(timeout=timeout)
+    end_time = time.monotonic()
+    assert end_time - start_time == pytest.approx(timeout, abs=0.15)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("count", [50, 100, 500])
-async def test_put_and_get_unlimited_queue(redis_queue_no_maxsize: RedisQueue, count: int):
+async def test_put_and_get_unlimited_queue(redis_queue_no_maxsize: RedisQueue[str], count: int):
     for i in range(count):
         await redis_queue_no_maxsize.put(f"message{i}")
     assert await redis_queue_no_maxsize.qsize() == count

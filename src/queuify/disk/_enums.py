@@ -2,6 +2,10 @@ from enum import Enum
 
 
 class SqlOperation(str, Enum):
+    """
+    Names of the SQL operations used by the disk queue.
+    """
+
     create_queue_table = "create_queue_table"
     count_items = "count_items"
     insert_item = "insert_item"

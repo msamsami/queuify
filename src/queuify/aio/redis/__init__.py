@@ -11,7 +11,7 @@ from queuify.const import (
     TIMEOUT_NEGATIVE_ERROR_MSG,
 )
 from queuify.exceptions import QueueEmpty, QueueFull
-from queuify.redis.enums import RedisOperation
+from queuify.redis._enums import RedisOperation
 
 from .base import BaseAsyncRedisQueue
 

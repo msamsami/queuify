@@ -12,8 +12,8 @@ from queuify.const import (
 )
 from queuify.exceptions import QueueEmpty, QueueFull
 
+from ._enums import RedisOperation
 from .base import BaseRedisQueue
-from .enums import RedisOperation
 
 T = TypeVar("T", bound=FieldT)
 
